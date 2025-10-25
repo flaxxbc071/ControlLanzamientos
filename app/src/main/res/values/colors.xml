@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kpiGreen">#2E7D32</color>
+    <color name="kpiYellow">#F9A825</color>
+    <color name="kpiRed">#C62828</color>
+</resources>
