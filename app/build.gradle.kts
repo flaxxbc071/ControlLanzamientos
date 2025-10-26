@@ -50,6 +50,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
+    implementation("org.apache.poi:poi-ooxml:5.2.5") {
+    exclude(group = "org.apache.logging.log4j", module = "log4j-api")}
 
     // Tabs / navegación
     implementation("androidx.viewpager2:viewpager2:1.0.0")

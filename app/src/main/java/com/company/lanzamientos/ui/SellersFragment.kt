@@ -5,6 +5,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.company.lanzamientos.R
+import com.company.lanzamientos.data.KpiSeller
+
 
 class SellersFragment : Fragment() {
     override fun onCreateView(i: LayoutInflater, c: ViewGroup?, s: android.os.Bundle?): View {
