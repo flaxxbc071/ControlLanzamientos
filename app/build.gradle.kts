@@ -7,7 +7,24 @@ plugins {
 android {
     namespace = "com.company.lanzamientos"
     compileSdk = 34
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
 
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
+kotlin {
+    jvmToolchain(17)
+}
+
+kapt {
+    correctErrorTypes = true
+}
     defaultConfig {
         applicationId = "com.company.lanzamientos"
         minSdk = 26
