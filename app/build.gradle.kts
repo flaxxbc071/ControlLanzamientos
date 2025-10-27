@@ -14,6 +14,26 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(project.findProperty("RELEASE_KEYSTORE") ?: "release.keystore")
+            storePassword = (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: "") as String
+            keyAlias = (project.findProperty("RELEASE_KEY_ALIAS") ?: "") as String
+            keyPassword = (project.findProperty("RELEASE_KEY_PASSWORD") ?: "") as String
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
+            // proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug { isMinifyEnabled = false }
+    }
+}
+
     }
 
     buildTypes {
