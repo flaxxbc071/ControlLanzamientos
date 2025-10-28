@@ -1,0 +1,115 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        rid: [ android-arm64, android-arm, android-x64 ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Java 17 (Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android --ignore-failed-sources
+
+      - name: Locate MAUI project
+        shell: pwsh
+        run: |
+          $proj = Get-ChildItem -Recurse -Filter *.csproj | Where-Object { (Get-Content $_.FullName -Raw) -match '<UseMaui>true</UseMaui>' } | Select-Object -First 1
+          if (-not $proj) { throw 'No MAUI .csproj found in repository' }
+          echo "PROJ=$($proj.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Found MAUI project: $($proj.FullName)"
+
+      - name: Restore
+        run: dotnet restore "$env:PROJ"
+
+      - name: Build Debug APK (${{ matrix.rid }})
+        run: dotnet publish "$env:PROJ" -c Debug -f net8.0-android -p:AndroidPackageFormat=apk -p:RuntimeIdentifier=${{ matrix.rid }}
+
+      - name: Upload APK artifact (${{ matrix.rid }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: ControlVendedores-${{ matrix.rid }}-debug
+          path: '**/bin/Debug/net8.0-android/**/${{ matrix.rid }}/**/*.apk'
+
+  build-universal-apk:
+    runs-on: windows-latest
+    needs: build-android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Java 17 (Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android --ignore-failed-sources
+
+      - name: Locate MAUI project
+        shell: pwsh
+        run: |
+          $proj = Get-ChildItem -Recurse -Filter *.csproj | Where-Object { (Get-Content $_.FullName -Raw) -match '<UseMaui>true</UseMaui>' } | Select-Object -First 1
+          if (-not $proj) { throw 'No MAUI .csproj found in repository' }
+          echo "PROJ=$($proj.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Found MAUI project: $($proj.FullName)"
+
+      - name: Restore
+        run: dotnet restore "$env:PROJ"
+
+      - name: Build Debug APK (universal: arm64+arm)
+        run: dotnet publish "$env:PROJ" -c Debug -f net8.0-android -p:AndroidPackageFormat=apk -p:AndroidSupportedAbis="arm64-v8a;armeabi-v7a" -p:BuildMultiAbi=true
+
+      - name: Upload APK artifact (universal)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ControlVendedores-android-universal-debug
+          path: '**/bin/Debug/net8.0-android/**/*.apk'
+
+      - name: Locate universal Signed APK path
+        id: locateapk
+        shell: pwsh
+        run: |
+          $apk = Get-ChildItem -Recurse -Filter 'com.companyname.controlvendedores-Signed.apk' | Select-Object -First 1
+          if (-not $apk) { throw 'Signed universal APK not found' }
+          echo "APK_PATH=$($apk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "APK: $($apk.FullName)"
+
+      - name: Create GitHub Release and upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: universal-debug-v${{ github.run_number }}
+          name: ControlVendedores Universal Debug APK
+          body: |
+            Build automático del APK universal (arm64 + arm). Descarga directa del archivo adjunto.
+          draft: false
+          prerelease: true
+          files: |
+            ${{ env.APK_PATH }}
